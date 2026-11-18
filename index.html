@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BeePulse — раннее предупреждение для пасеки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14110b;--surface:#1d1910;--surface-2:#262016;--line:#3a3122;
+  --text:#f6efe1;--muted:#b8ab92;--honey:#f5b301;--honey-2:#ffcf4a;
+  --ok:#5fd08a;--warn:#f5b301;--alert:#ff6b4a;--info:#6cb8ff;
+  --radius:18px;--shadow:0 20px 50px -20px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:Manrope,system-ui,sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--honey-2);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.mono{font-family:"JetBrains Mono",monospace}
+/* honeycomb bg */
+body::before{content:"";position:fixed;inset:0;z-index:-1;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98'%3E%3Cpath d='M28 66L0 50V18L28 2l28 16v32zM28 98L0 82' fill='none' stroke='%23f5b301' stroke-width='1.2'/%3E%3C/svg%3E")}
+
+/* nav */
+header{position:sticky;top:0;z-index:20;background:rgba(20,17,11,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;text-decoration:none}
+.logo svg{width:30px;height:30px}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{text-decoration:none;color:var(--muted);font-weight:600;font-size:15px;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 22px;border-radius:999px;border:1px solid transparent;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;transition:transform .15s,background .2s,border-color .2s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--honey);color:#1a1300}
+.btn-primary:hover{background:var(--honey-2)}
+.btn-ghost{border-color:var(--line);color:var(--text);background:transparent}
+.btn-ghost:hover{border-color:var(--honey)}
+@media(max-width:820px){.nav-links{display:none}}
+
+/* hero */
+.hero{padding:80px 0 60px;display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid var(--line);border-radius:999px;color:var(--honey-2);font-size:13px;font-weight:700;letter-spacing:.04em}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(95,208,138,.6);animation:ping 2s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 10px rgba(95,208,138,0)}100%{box-shadow:0 0 0 0 rgba(95,208,138,0)}}
+h1{font-size:clamp(36px,5.5vw,62px);line-height:1.05;font-weight:800;letter-spacing:-.02em;margin:20px 0}
+h1 em{font-style:normal;color:var(--honey)}
+.lead{font-size:19px;color:var(--muted);max-width:560px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+.hero-card{background:linear-gradient(160deg,var(--surface-2),var(--surface));border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+.hero-card canvas{width:100%;height:160px;display:block}
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.mini-stats div{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px}
+.mini-stats b{display:block;font-size:20px}
+.mini-stats span{font-size:12px;color:var(--muted)}
+@media(max-width:900px){.hero{grid-template-columns:1fr;padding-top:48px}}
+
+section{padding:80px 0}
+.sec-head{max-width:700px;margin-bottom:40px}
+.sec-head .kicker{color:var(--honey);font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase}
+h2{font-size:clamp(28px,3.6vw,42px);line-height:1.15;letter-spacing:-.01em;margin:10px 0 14px}
+.sec-head p{color:var(--muted);font-size:18px}
+
+/* timeline compare */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.tl{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px}
+.tl h3{font-size:20px;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.tl ol{list-style:none;position:relative;padding-left:24px}
+.tl ol::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl li{position:relative;margin-bottom:16px;color:var(--muted)}
+.tl li::before{content:"";position:absolute;left:-23px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--surface-2);border:2px solid var(--line)}
+.tl li b{color:var(--text);display:block}
+.tl.bad li.hit::before{background:var(--alert);border-color:var(--alert)}
+.tl.good li.hit::before{background:var(--honey);border-color:var(--honey)}
+.tl.good{border-color:rgba(245,179,1,.4)}
+@media(max-width:820px){.compare{grid-template-columns:1fr}}
+
+/* sensors */
+.sensors{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.sensor{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px;cursor:pointer;transition:border-color .25s,transform .25s;text-align:left;color:inherit;font:inherit}
+.sensor:hover{border-color:var(--honey);transform:translateY(-3px)}
+.sensor[aria-expanded=true]{border-color:var(--honey);background:var(--surface-2)}
+.ic{width:52px;height:52px;border-radius:14px;background:rgba(245,179,1,.12);display:grid;place-items:center;color:var(--honey);margin-bottom:18px}
+.ic svg{width:26px;height:26px}
+.sensor h3{font-size:20px;margin-bottom:8px}
+.sensor p{color:var(--muted)}
+.sensor .more{max-height:0;overflow:hidden;transition:max-height .35s ease;color:var(--muted);font-size:15px}
+.sensor[aria-expanded=true] .more{max-height:260px}
+.sensor .more ul{margin-top:14px;padding-left:18px}
+.sensor .toggle{margin-top:14px;color:var(--honey);font-weight:700;font-size:14px}
+@media(max-width:900px){.sensors{grid-template-columns:1fr}}
+
+/* dashboard */
+.dash{display:grid;grid-template-columns:260px 1fr;gap:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+.hives{display:flex;flex-direction:column;gap:10px}
+.hive-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:56px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-weight:700;cursor:pointer;transition:border-color .2s,background .2s}
+.hive-btn:hover{border-color:var(--muted)}
+.hive-btn[aria-pressed=true]{border-color:var(--honey);background:var(--surface-2)}
+.hive-btn small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.badge{font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.b-ok{background:rgba(95,208,138,.15);color:var(--ok)}
+.b-warn{background:rgba(245,179,1,.15);color:var(--warn)}
+.b-alert{background:rgba(255,107,74,.15);color:var(--alert)}
+.panel h4{font-size:13px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.scen{display:flex;flex-direction:column;gap:8px;margin-top:22px}
+.scen button{min-height:44px;text-align:left;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);background:transparent;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;transition:all .2s}
+.scen button:hover{color:var(--text);border-color:var(--honey)}
+.scen button[aria-pressed=true]{color:var(--honey-2);border-style:solid;border-color:var(--honey)}
+.main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.status-bar{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.gauge{position:relative;width:110px;height:110px;flex:none}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .val{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-weight:800;font-size:26px;line-height:1}
+.gauge .val small{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-top:4px}
+.status-text h3{font-size:22px}
+.status-text p{color:var(--muted);max-width:520px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.metric{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px}
+.metric span{font-size:12px;color:var(--muted)}
+.metric b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.metric i{font-style:normal;font-size:12px}
+.up{color:var(--alert)}.flat{color:var(--muted)}.down{color:var(--info)}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.chart-box canvas{width:100%;height:170px;display:block}
+.chart-box .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.feed{list-style:none;display:flex;flex-direction:column;gap:10px;max-height:300px;overflow:auto}
+.feed li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;padding:12px;border-radius:12px;background:var(--bg);border-left:3px solid var(--line);animation:slide .4s ease}
+.feed li.warn{border-left-color:var(--warn)}.feed li.alert{border-left-color:var(--alert)}.feed li.ok{border-left-color:var(--ok)}
+.feed time{color:var(--muted);font-size:12px}
+.feed p{font-size:14px;color:var(--muted)}
+.feed b{font-size:15px}
+@keyframes slide{from{opacity:0;transform:translateY(-6px)}}
+.check{margin-top:4px;font-size:13px;color:var(--honey-2)}
+@media(max-width:980px){.dash{grid-template-columns:1fr}.hives{flex-direction:row;overflow:auto}.hive-btn{min-width:190px}.charts{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+
+/* 3d */
+.m3d{display:grid;grid-template-columns:1fr 300px;gap:20px}
+.m3d-stage{height:480px;padding:0;overflow:hidden;cursor:grab;touch-action:none;background:radial-gradient(circle at 50% 40%,#2b2415,#14110b 75%)}
+.m3d-stage:active{cursor:grabbing}
+.m3d-stage canvas{display:block;width:100%!important;height:100%!important}
+.parts{display:flex;flex-direction:column;gap:8px}
+.parts button{text-align:left;min-height:56px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;cursor:pointer;transition:border-color .2s}
+.parts button:hover{border-color:var(--muted)}
+.parts button[aria-pressed=true]{border-color:var(--honey);background:var(--surface-2)}
+.parts b{display:block;font-size:15px}.parts span{font-size:13px;color:var(--muted)}
+.xray{display:flex;gap:10px;align-items:center;margin-top:16px;color:var(--muted);font-size:14px;cursor:pointer;min-height:44px}
+.m3d-stage{position:relative}
+.lbl{position:absolute;left:0;top:0;padding:4px 10px;border-radius:999px;background:rgba(20,17,11,.82);border:1px solid var(--line);color:var(--text);font:700 12px Manrope,sans-serif;white-space:nowrap;cursor:pointer;transition:border-color .2s,color .2s}
+.lbl:hover,.lbl.on{border-color:var(--honey);color:var(--honey-2)}
+.xray{margin-top:8px}
+.xray input{width:18px;height:18px;accent-color:var(--honey)}
+@media(max-width:900px){.m3d{grid-template-columns:1fr}.m3d-stage{height:360px}}
+
+/* principle */
+.honest{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.honest .col{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px}
+.honest h3{display:flex;gap:10px;align-items:center;margin-bottom:14px;font-size:20px}
+.honest ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+.honest li{display:flex;gap:10px;color:var(--muted)}
+.honest li svg{flex:none;width:20px;height:20px;margin-top:3px}
+@media(max-width:820px){.honest{grid-template-columns:1fr}}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;counter-reset:s}
+.step{padding:24px;border-top:2px solid var(--line);transition:border-color .3s}
+.step:hover{border-color:var(--honey)}
+.step::before{counter-increment:s;content:"0" counter(s);font-family:"JetBrains Mono";color:var(--honey);font-weight:600}
+.step h3{margin:10px 0 6px;font-size:18px}
+.step p{color:var(--muted);font-size:15px}
+@media(max-width:900px){.steps{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.steps{grid-template-columns:1fr}}
+
+/* faq */
+details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:0 20px;margin-bottom:10px}
+summary{cursor:pointer;min-height:56px;display:flex;align-items:center;justify-content:space-between;font-weight:700;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--honey);font-size:22px;transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--muted);padding-bottom:18px}
+
+.cta{background:linear-gradient(135deg,#2a2210,#1d1910);border:1px solid rgba(245,179,1,.35);border-radius:28px;padding:48px;display:grid;grid-template-columns:1fr auto;gap:30px;align-items:center}
+.cta form{display:flex;gap:10px;flex-wrap:wrap}
+.cta label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+.cta input{min-height:46px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;min-width:240px}
+.cta input:focus{border-color:var(--honey);outline:none}
+.form-msg{font-size:14px;margin-top:8px;min-height:22px}
+@media(max-width:820px){.cta{grid-template-columns:1fr;padding:28px}.cta input{min-width:0;width:100%}}
+footer{padding:40px 0;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+.motion .reveal{transition:none}
+.motion .btn,.motion .sensor,.motion .hive-btn,.motion .parts button{transition-property:background,border-color,color}
+.motion .sensor:hover{transform:none}
+
+/* motion design */
+.motion .hero{position:relative}
+.motion .hero>*:not(.hero-fx){position:relative;z-index:1}
+.hero-fx{position:absolute;inset:-40px -20px;pointer-events:none;z-index:0;overflow:hidden}
+.hero-fx .hx{position:absolute}
+.hero-fx svg{display:block}
+.bee{position:absolute;left:0;top:0;width:34px;height:28px;margin:-14px 0 0 -17px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+.bee .wing{transform-origin:50% 100%;animation:flap .06s linear infinite alternate}
+@keyframes flap{to{transform:scaleY(.25)}}
+.w{display:inline-block;will-change:transform}
+.kline{display:inline-block;width:28px;height:2px;background:var(--honey);margin-right:10px;vertical-align:middle;transform-origin:0 50%}
+.tl-fill{position:absolute;left:6px;top:6px;bottom:6px;width:2px;transform-origin:50% 0;transform:scaleY(0)}
+.tl.bad .tl-fill{background:var(--alert)}.tl.good .tl-fill{background:var(--honey)}
+.motion .steps{position:relative}
+.steps-line{position:absolute;left:0;right:0;top:0;height:2px;background:var(--honey);transform-origin:0 50%;transform:scaleX(0);z-index:1}
+#progress{position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--honey),var(--honey-2));transform-origin:0 50%;transform:scaleX(0);z-index:30}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="progress" aria-hidden="true"></div>
+<header>
+  <nav class="wrap" aria-label="Основная навигация">
+    <a href="#top" class="logo" aria-label="BeePulse — на главную">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2l12 7v14l-12 7-12-7V9z" fill="none" stroke="#f5b301" stroke-width="2.2"/><path d="M8 16h4l2-5 4 10 2-5h4" fill="none" stroke="#ffcf4a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      BeePulse
+    </a>
+    <ul class="nav-links">
+      <li><a href="#problem">Проблема</a></li>
+      <li><a href="#sensors">Как работает</a></li>
+      <li><a href="#model3d">3D</a></li>
+      <li><a href="#demo">Демо</a></li>
+      <li><a href="#honest">Принципы</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a href="#demo" class="btn btn-primary">Открыть демо</a>
+  </nav>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>Система раннего предупреждения</span>
+      <h1>Услышьте улей <em>раньше</em>, чем проблема станет заметной</h1>
+      <p class="lead">BeePulse круглосуточно слушает звук, вибрации и микроклимат колонии и подсказывает, когда улью нужна ваша проверка. Без лишних вскрытий и без догадок.</p>
+      <div class="hero-cta">
+        <a href="#demo" class="btn btn-primary">Попробовать симуляцию
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a href="#sensors" class="btn btn-ghost">Как это работает</a>
+      </div>
+    </div>
+    <div class="hero-card" aria-label="Пример живого сигнала улья">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <b>Улей №3 · акустика</b><span class="badge b-ok">В норме</span>
+      </div>
+      <canvas id="heroWave" aria-hidden="true"></canvas>
+      <div class="mini-stats">
+        <div><b class="mono">248 Гц</b><span>основной тон</span></div>
+        <div><b class="mono">34.6°</b><span>в гнезде</span></div>
+        <div><b class="mono">61%</b><span>влажность</span></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="problem">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">Проблема</span>
+        <h2>Пчеловод узнаёт о беде, когда она уже видна</h2>
+        <p>Улей — закрытая система. Изменения внутри колонии начинаются задолго до того, как их заметно снаружи или при плановом осмотре раз в 1–2 недели.</p>
+      </div>
+      <div class="compare">
+        <div class="tl bad reveal">
+          <h3><span class="badge b-alert">Сейчас</span>Без мониторинга</h3>
+          <ol>
+            <li class="hit"><b>День 0</b>В колонии начинаются изменения — никто не знает</li>
+            <li><b>День 3–7</b>Меняется звук и терморегуляция гнезда</li>
+            <li><b>День 10</b>Плановый осмотр — ещё не очевидно</li>
+            <li class="hit"><b>День 14+</b>Последствия заметны: слабость, роение, потеря силы</li>
+          </ol>
+        </div>
+        <div class="tl good reveal">
+          <h3><span class="badge b-warn">BeePulse</span>С ранним предупреждением</h3>
+          <ol>
+            <li><b>День 0</b>Датчики фиксируют базовый профиль улья</li>
+            <li class="hit"><b>День 2–3</b>Отклонение от нормы этого улья → уведомление</li>
+            <li class="hit"><b>День 3</b>Пчеловод проверяет именно этот улей</li>
+            <li><b>Итог</b>Решение принято раньше, с данными на руках</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sensors">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">Три канала данных</span>
+        <h2>Что слушает BeePulse</h2>
+        <p>Каждый улей уникален, поэтому система сначала изучает его собственную норму, а потом ищет отклонения. Нажмите на карточку, чтобы узнать подробнее.</p>
+      </div>
+      <div class="sensors">
+        <button class="sensor reveal" aria-expanded="false">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 10v4M22 12h0"/></svg></div>
+          <h3>Звук</h3>
+          <p>Микрофон внутри улья анализирует спектр гула колонии.</p>
+          <div class="more"><ul><li>Сдвиг основного тона и гармоник</li><li>Нетипичные звуковые паттерны</li><li>Изменение суточного ритма активности</li></ul></div>
+          <div class="toggle">Подробнее</div>
+        </button>
+        <button class="sensor reveal" aria-expanded="false">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12l3-6 3 12 3-12 3 12 3-12 3 6"/></svg></div>
+          <h3>Вибрации</h3>
+          <p>Акселерометр на рамке ловит колебания сотов.</p>
+          <div class="more"><ul><li>Рост общей возбуждённости колонии</li><li>Локальные всплески активности</li><li>Сравнение с ночным фоном</li></ul></div>
+          <div class="toggle">Подробнее</div>
+        </button>
+        <button class="sensor reveal" aria-expanded="false">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 14.8V4a2 2 0 10-4 0v10.8a4 4 0 104 0z"/><path d="M18 6h3M18 10h3"/></svg></div>
+          <h3>Микроклимат</h3>
+          <p>Температура и влажность в гнезде и снаружи.</p>
+          <div class="more"><ul><li>Стабильность терморегуляции расплода</li><li>Риск перегрева или переохлаждения</li><li>Избыточная влажность и конденсат</li></ul></div>
+          <div class="toggle">Подробнее</div>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section id="model3d">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">3D-модель</span>
+        <h2>Модуль BeePulse внутри улья</h2>
+        <p>Перетаскивайте, чтобы вращать; колесо мыши — масштаб. Нажмите на компонент в модели или в списке — камера приблизится к нему.</p>
+      </div>
+      <div class="m3d">
+        <div class="m3d-stage panel" id="m3d" aria-label="Интерактивная 3D-модель улья с модулем BeePulse" role="img"></div>
+        <div class="panel m3d-side">
+          <h4>Компоненты</h4>
+          <div class="parts" id="parts">
+            <button data-p="hub" aria-pressed="false"><b>ESP32</b><span>Центральный контроллер: сбор, обработка и передача данных</span></button>
+            <button data-p="mic" aria-pressed="false"><b>Микрофон MAX9814</b><span>Записывает акустическую активность пчёл</span></button>
+            <button data-p="acc" aria-pressed="false"><b>MPU6050</b><span>Вибрации и механические колебания улья</span></button>
+            <button data-p="th" aria-pressed="false"><b>BME280</b><span>Температура и влажность</span></button>
+            <button data-p="load" aria-pressed="false"><b>Load Cell + HX711</b><span>Масса улья и её изменения</span></button>
+          </div>
+          <label class="xray"><input type="checkbox" id="xray" checked> Прозрачный корпус</label>
+          <label class="xray"><input type="checkbox" id="explode"> Разобрать улей</label>
+          <label class="xray"><input type="checkbox" id="labels" checked> Подписи</label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="demo">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">Интерактивное демо</span>
+        <h2>Панель пасеки</h2>
+        <p>Выберите улей и смоделируйте сценарий. Данные синтетические — они показывают логику работы системы.</p>
+      </div>
+      <div class="dash">
+        <aside class="panel">
+          <h4>Ульи</h4>
+          <div class="hives" id="hives"></div>
+          <h4 style="margin-top:22px">Сценарий для выбранного улья</h4>
+          <div class="scen" id="scen"></div>
+        </aside>
+        <div class="main">
+          <div class="panel status-bar">
+            <div class="gauge" aria-hidden="true">
+              <svg width="110" height="110"><circle cx="55" cy="55" r="46" stroke="#3a3122" stroke-width="10" fill="none"/><circle id="gArc" cx="55" cy="55" r="46" stroke="#5fd08a" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289" style="transition:stroke-dashoffset .8s ease,stroke .4s"/></svg>
+              <div class="val"><span><span id="gVal">0</span><small>отклонение</small></span></div>
+            </div>
+            <div class="status-text" aria-live="polite">
+              <h3 id="stTitle">—</h3>
+              <p id="stText">—</p>
+            </div>
+          </div>
+          <div class="metrics" id="metrics"></div>
+          <div class="charts">
+            <div class="panel chart-box">
+              <h4>Акустический спектр</h4>
+              <canvas id="spec" role="img" aria-label="Спектр звука улья в сравнении с нормой"></canvas>
+              <div class="legend"><span><i style="background:#f5b301"></i>сейчас</span><span><i style="background:#6b5d44"></i>норма улья</span></div>
+            </div>
+            <div class="panel chart-box">
+              <h4>Температура гнезда, 24 ч</h4>
+              <canvas id="temp" role="img" aria-label="График температуры гнезда за сутки"></canvas>
+              <div class="legend"><span><i style="background:#ff6b4a"></i>гнездо</span><span><i style="background:#5fd08a;opacity:.5"></i>комфортная зона 33–36°C</span></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h4>Лента событий</h4>
+            <ul class="feed" id="feed" aria-live="polite"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="kicker">Границы системы</span>
+        <h2>BeePulse подсказывает, какой улей пора осмотреть</h2>
+        <p>Система замечает, когда звук, вибрации или микроклимат улья уходят от его обычных значений, и сообщает об этом. Болезни она не определяет: что происходит с колонией, пчеловод выясняет при осмотре.</p>
+      </div>
+      <div class="honest">
+        <div class="col reveal">
+          <h3><span class="badge b-ok">Делает</span></h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="#5fd08a" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Изучает индивидуальную норму каждого улья</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="#5fd08a" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Замечает устойчивые отклонения в звуке, вибрации и климате</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="#5fd08a" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Ранжирует ульи по приоритету проверки</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="#5fd08a" stroke-width="2.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>Показывает, какие именно показатели изменились</li>
+          </ul>
+        </div>
+        <div class="col reveal">
+          <h3><span class="badge b-alert">Не делает</span></h3>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="#ff6b4a" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Не определяет болезни и вредителей</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="#ff6b4a" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Не назначает лечение</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="#ff6b4a" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Не заменяет осмотр и опыт пчеловода</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="#ff6b4a" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Не утверждает причину — только факт изменения</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="sec-head reveal"><span class="kicker">Внедрение</span><h2>От установки до первого сигнала</h2></div>
+      <div class="steps">
+        <div class="step reveal"><h3>Установка</h3><p>Датчики крепятся в улье, весы — под корпус; контроллер ESP32 — на крышке.</p></div>
+        <div class="step reveal"><h3>Обучение</h3><p>7–14 дней система формирует базовый профиль конкретной колонии.</p></div>
+        <div class="step reveal"><h3>Наблюдение</h3><p>Непрерывный анализ с учётом погоды, времени суток и сезона.</p></div>
+        <div class="step reveal"><h3>Сигнал</h3><p>Уведомление «рекомендуется проверка» с объяснением, что изменилось.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap" style="max-width:820px">
+      <div class="sec-head reveal"><span class="kicker">Вопросы</span><h2>Частые вопросы</h2></div>
+      <details><summary>Может ли BeePulse определить болезнь пчёл?</summary><p>Нет. Мы сознательно не делаем таких заявлений. Система сообщает, что поведение колонии отличается от её нормы, а выяснить причину — задача пчеловода при осмотре.</p></details>
+      <details><summary>Не будет ли много ложных тревог?</summary><p>Предупреждение формируется только при устойчивом отклонении сразу по нескольким признакам и с учётом погоды. Вы можете настроить чувствительность для каждого улья.</p></details>
+      <details><summary>Мешает ли устройство пчёлам?</summary><p>Модуль пассивный: не излучает звук, не нагревает гнездо и занимает места меньше одной рамки.</p></details>
+      <details><summary>Нужен ли интернет на пасеке?</summary><p>ESP32 передаёт данные по Wi‑Fi. При потере связи контроллер хранит записи и отправляет их позже.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span>© 2026 BeePulse · концепт-проект</span><span>Система раннего предупреждения, не диагностическое устройство.</span></div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/motion@11.11.13/dist/motion.js"></script>
+<script>
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+
+/* reveal */
+const io = new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+const M2=!reduce&&window.Motion;
+if(!M2)document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* sensor cards */
+document.querySelectorAll('.sensor').forEach(b=>b.addEventListener('click',()=>{
+  const open=b.getAttribute('aria-expanded')==='true';
+  b.setAttribute('aria-expanded',!open);
+  b.querySelector('.toggle').textContent=open?'Подробнее':'Свернуть';
+}));
+
+/* canvas helper */
+function fit(c){const r=c.getBoundingClientRect(),d=devicePixelRatio||1;c.width=r.width*d;c.height=r.height*d;const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);return {x,w:r.width,h:r.height}}
+
+/* hero wave */
+const hw=$('#heroWave');let t=0;
+function heroLoop(){const {x,w,h}=fit(hw);x.clearRect(0,0,w,h);
+  [['#f5b301',1,1],['rgba(255,207,74,.35)',.6,1.7],['rgba(245,179,1,.18)',.4,2.6]].forEach(([c,a,f])=>{
+    x.beginPath();x.strokeStyle=c;x.lineWidth=2;
+    for(let i=0;i<=w;i+=2){const y=h/2+Math.sin(i*.04*f+t)*h*.28*a*Math.sin(i/w*Math.PI)+Math.sin(i*.17+t*2)*4*a;i?x.lineTo(i,y):x.moveTo(i,y)}
+    x.stroke()});
+  t+=.04;if(!reduce)requestAnimationFrame(heroLoop)}
+heroLoop();
+
+/* ---- Demo model ---- */
+const SCEN={
+  normal:{label:'Обычное состояние',dev:12,freq:248,vib:1.0,temp:34.6,hum:61,shift:0,tVar:.3,tOff:0},
+  swarm:{label:'Предроевое возбуждение',dev:68,freq:262,vib:2.4,temp:35.4,hum:63,shift:14,tVar:.6,tOff:.6,
+    title:'Рекомендуется проверка в ближайшие 1–2 дня',
+    text:'Растут вибрации сотов и высокочастотная составляющая звука. Похоже на рост возбуждения колонии — осмотрите улей.',
+    ev:[['warn','Рост вибрационной активности','+140% к норме этого улья за 36 ч'],['warn','Сдвиг акустического спектра','Основной тон смещён на +14 Гц']]},
+  acoustic:{label:'Нетипичный звуковой профиль',dev:74,freq:231,vib:1.6,temp:34.1,hum:60,shift:-17,tVar:.5,tOff:-.4,noisy:true,
+    title:'Рекомендуется проверка: изменился «голос» колонии',
+    text:'Звуковой профиль устойчиво отличается от нормы уже двое суток. Причина неизвестна — система лишь фиксирует изменение.',
+    ev:[['alert','Устойчивое изменение звука','Отклонение держится 48 ч, не связано с погодой'],['warn','Нерегулярный суточный ритм','Ночной фон выше обычного']]},
+  heat:{label:'Нарушение терморегуляции',dev:82,freq:255,vib:1.9,temp:37.8,hum:48,shift:6,tVar:1.4,tOff:3,
+    title:'Срочно: температура гнезда вне нормы',
+    text:'Температура выше 37°C и продолжает расти, влажность падает. Проверьте вентиляцию и затенение улья.',
+    ev:[['alert','Перегрев гнезда','37.8°C — выше комфортной зоны расплода'],['warn','Падение влажности','−13% за 6 часов']]},
+  humid:{label:'Избыточная влажность',dev:46,freq:244,vib:.9,temp:33.4,hum:84,shift:-3,tVar:.5,tOff:-1.2,
+    title:'Наблюдение: высокая влажность',
+    text:'Влажность выше обычной несколько дней подряд. Стоит проверить вентиляцию и конденсат при следующем визите.',
+    ev:[['warn','Влажность 84%','Выше нормы улья 3 суток подряд']]}
+};
+const hives=[
+  {id:1,name:'Улей №1',place:'Ряд А · Карника',sc:'normal'},
+  {id:2,name:'Улей №2',place:'Ряд А · Бакфаст',sc:'humid'},
+  {id:3,name:'Улей №3',place:'Ряд Б · Карника',sc:'normal'},
+  {id:4,name:'Улей №4',place:'Ряд Б · Среднерусская',sc:'swarm'},
+];
+let cur=hives[0];
+const feedLog=[['ok','Система запущена','4 улья на связи, базовые профили сформированы','08:00']];
+
+function level(d){return d>=70?['alert','Проверить срочно','b-alert','#ff6b4a']:d>=40?['warn','Нужна проверка','b-warn','#f5b301']:['ok','В норме','b-ok','#5fd08a']}
+
+function renderHives(){
+  $('#hives').innerHTML=hives.map(h=>{const l=level(SCEN[h.sc].dev);
+    return `<button class="hive-btn" aria-pressed="${h===cur}" data-id="${h.id}"><span>${h.name}<small>${h.place}</small></span><span class="badge ${l[2]}">${l[1]}</span></button>`}).join('');
+  $('#hives').querySelectorAll('button').forEach(b=>b.onclick=()=>{cur=hives.find(h=>h.id==b.dataset.id);update()});
+}
+function renderScen(){
+  $('#scen').innerHTML=Object.entries(SCEN).map(([k,s])=>`<button data-k="${k}" aria-pressed="${cur.sc===k}">${s.label}</button>`).join('');
+  $('#scen').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    if(cur.sc===b.dataset.k)return;cur.sc=b.dataset.k;const s=SCEN[cur.sc];
+    const now=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+    if(s.ev)s.ev.forEach(e=>feedLog.unshift([e[0],cur.name+': '+e[1],e[2],now]));
+    else feedLog.unshift(['ok',cur.name+': показатели вернулись к норме','Отклонений не обнаружено',now]);
+    update()});
+}
+function renderStatus(){
+  const s=SCEN[cur.sc],l=level(s.dev);
+  $('#gArc').style.strokeDashoffset=289-289*s.dev/100;$('#gArc').style.stroke=l[3];
+  animNum($('#gVal'),s.dev);
+  $('#stTitle').textContent=s.title||cur.name+': проверка не требуется';
+  $('#stText').textContent=s.text||'Звук, вибрации и микроклимат соответствуют индивидуальной норме улья. Следующий плановый осмотр — по вашему графику.';
+  const n=SCEN.normal,arrow=(a,b,u)=>{const d=+(a-b).toFixed(1);return d>0?`<i class="up">▲ ${d}${u}</i>`:d<0?`<i class="down">▼ ${-d}${u}</i>`:`<i class="flat">— норма</i>`};
+  $('#metrics').innerHTML=[
+    ['Основной тон',s.freq+' Гц',arrow(s.freq,n.freq,' Гц')],
+    ['Вибрации',s.vib.toFixed(1)+'×',arrow(s.vib,n.vib,'×')],
+    ['Температура',s.temp+'°C',arrow(s.temp,n.temp,'°')],
+    ['Влажность',s.hum+'%',arrow(s.hum,n.hum,'%')]
+  ].map(m=>`<div class="metric"><span>${m[0]}</span><b class="mono">${m[1]}</b>${m[2]}</div>`).join('');
+}
+function renderFeed(){
+  $('#feed').innerHTML=feedLog.slice(0,12).map(f=>`<li class="${f[0]}"><span class="badge b-${f[0]}">${f[0]==='ok'?'OK':f[0]==='warn'?'Внимание':'Важно'}</span><div><b>${f[1]}</b><p>${f[2]}</p>${f[0]!=='ok'?'<div class="check">→ Рекомендуется осмотр улья</div>':''}</div><time>${f[3]}</time></li>`).join('');
+}
+function animNum(el,to){const from=+el.textContent||0,st=performance.now();
+  (function f(n){const p=Math.min((n-st)/600,1);el.textContent=Math.round(from+(to-from)*p);if(p<1&&!reduce)requestAnimationFrame(f);else el.textContent=to})(st)}
+
+/* charts */
+function gauss(x,m,s){return Math.exp(-((x-m)**2)/(2*s*s))}
+let ph=0;
+function drawSpec(){
+  const {x,w,h}=fit($('#spec')),s=SCEN[cur.sc];x.clearRect(0,0,w,h);
+  const prof=(sh,j)=>f=>gauss(f,250+sh,30)*.9+gauss(f,500+sh*2,40)*.45+gauss(f,750,50)*.18+(j?Math.random()*.08:0);
+  const line=(fn,col,fill)=>{x.beginPath();for(let i=0;i<=w;i+=2){const f=100+i/w*800,y=h-18-fn(f)*(h-30);i?x.lineTo(i,y):x.moveTo(i,y)}
+    x.strokeStyle=col;x.lineWidth=2;x.stroke();if(fill){x.lineTo(w,h-18);x.lineTo(0,h-18);x.fillStyle=fill;x.fill()}};
+  line(prof(0,false),'#6b5d44');
+  const live=prof(s.shift,s.noisy);line(f=>live(f)*(1+Math.sin(ph+f/40)*.04),'#f5b301','rgba(245,179,1,.12)');
+  x.fillStyle='#b8ab92';x.font='11px JetBrains Mono';[100,300,500,700,900].forEach(f=>x.fillText(f+'Гц',(f-100)/800*w-(f===900?40:0),h-3));
+  ph+=.08;
+}
+function drawTemp(){
+  const {x,w,h}=fit($('#temp')),s=SCEN[cur.sc];x.clearRect(0,0,w,h);
+  const lo=30,hi=40,Y=v=>h-18-(v-lo)/(hi-lo)*(h-28);
+  x.fillStyle='rgba(95,208,138,.1)';x.fillRect(0,Y(36),w,Y(33)-Y(36));
+  x.beginPath();for(let i=0;i<=48;i++){const p=i/48,v=34.6+Math.sin(p*Math.PI*2)*s.tVar+s.tOff*Math.pow(p,2)+Math.sin(i*1.7)*.08;
+    const px=p*w;i?x.lineTo(px,Y(v)):x.moveTo(px,Y(v))}
+  x.strokeStyle='#ff6b4a';x.lineWidth=2;x.stroke();
+  x.fillStyle='#b8ab92';x.font='11px JetBrains Mono';[32,34,36,38].forEach(v=>x.fillText(v+'°',2,Y(v)-3));
+  ['−24ч','−12ч','сейчас'].forEach((l,i)=>x.fillText(l,i*w/2-(i===2?44:i?16:-24),h-3));
+}
+function loop(){drawSpec();if(!reduce)setTimeout(()=>requestAnimationFrame(loop),60)}
+function update(){renderHives();renderScen();renderStatus();renderFeed();drawTemp();if(reduce)drawSpec()}
+update();loop();addEventListener('resize',()=>{drawTemp()});
+
+/* ---- 3D model ---- */
+(function(){
+  if(!window.THREE)return;
+  const el=$('#m3d'),scene=new THREE.Scene();
+  scene.fog=new THREE.Fog(0x14110b,14,32);
+  const cam=new THREE.PerspectiveCamera(36,1,.05,100);
+  const r=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  r.setPixelRatio(Math.min(devicePixelRatio,2));r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;r.outputEncoding=THREE.sRGBEncoding;
+  el.appendChild(r.domElement);
+  scene.add(new THREE.HemisphereLight(0xfff1cc,0x2a2010,.8));
+  const sun=new THREE.DirectionalLight(0xfff4dd,1.1);sun.position.set(5,9,6);sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-4,right:4,top:5,bottom:-2,near:1,far:25});sun.shadow.bias=-.0005;scene.add(sun);
+  const fillL=new THREE.PointLight(0xffb347,.5,10);fillL.position.set(-3,2,3);scene.add(fillL);
+  const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+  /* procedural textures */
+  const tex=(w,h,draw)=>{const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t};
+  const woodTex=(base,dark)=>tex(256,256,(x,w,h)=>{x.fillStyle=base;x.fillRect(0,0,w,h);for(let i=0;i<70;i++){x.strokeStyle=dark;x.globalAlpha=.08+Math.random()*.15;x.lineWidth=.5+Math.random()*2;x.beginPath();const y=Math.random()*h;x.moveTo(0,y);for(let k=0;k<=w;k+=16)x.lineTo(k,y+Math.sin(k*.03+i)*3);x.stroke()}x.globalAlpha=1});
+  const combTex=brood=>tex(512,288,(x,w,h)=>{
+    x.fillStyle='#b8741f';x.fillRect(0,0,w,h);const R=7,dx=R*Math.sqrt(3),dy=R*1.5;
+    for(let row=0,y=0;y<h+R;row++,y+=dy)for(let xx=(row%2)*dx/2;xx<w+R;xx+=dx){
+      const d=Math.hypot((xx/w-.5)*2.2,(y/h-.55)*2.8);let col;
+      if(brood&&d<.75)col=Math.random()<.85?'#d9b77a':'#7a4a1c';
+      else if(!brood||d>.95)col=Math.random()<.75?'#f0c04a':'#e09a1a';
+      else col=Math.random()<.5?'#c9852c':'#8c5a22';
+      if(Math.random()<.04)col='#5a3612';
+      x.fillStyle=col;x.beginPath();for(let k=0;k<6;k++){const a=Math.PI/3*k+Math.PI/6;x.lineTo(xx+Math.cos(a)*(R-1),y+Math.sin(a)*(R-1))}
+      x.closePath();x.fill();x.strokeStyle='rgba(60,30,5,.35)';x.lineWidth=1;x.stroke()}});
+  const stripe=tex(64,64,(x,w,h)=>{for(let i=0;i<8;i++){x.fillStyle=i%2?'#1a1206':'#f2b51c';x.fillRect(0,i*h/8,w,h/8)}});
+  const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.75},o));
+  const mats={
+    wall:M(0xffffff,{map:woodTex('#c49a5c','#6b4a22'),transparent:true,opacity:.3,depthWrite:false,side:THREE.DoubleSide}),
+    wood:M(0xffffff,{map:woodTex('#c9a066','#6b4a22')}),dark:M(0xffffff,{map:woodTex('#8a6a3e','#3a2610')}),
+    brood:M(0xffffff,{map:combTex(true),roughness:.55}),honey:M(0xffffff,{map:combTex(false),roughness:.3}),
+    metal:M(0xb9bcc2,{metalness:.8,roughness:.3}),black:M(0x1a1a1a,{roughness:.4}),pin:M(0xe8c35a,{metalness:.9,roughness:.25}),
+    grass:M(0x141a0c,{roughness:1}),encl:M(0x9aa3ad,{transparent:true,opacity:.2,depthWrite:false,roughness:.1})
+  };
+  const edgeM=new THREE.LineBasicMaterial({color:0xf5b301,transparent:true,opacity:.45});
+  const root=new THREE.Group();scene.add(root);
+  const box=(w,h,d,m,x=0,y=0,z=0,p=root)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);p.add(b);return b};
+  const cyl=(rt,rb,h,m,x,y,z,p=root,seg=20)=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),m);c.position.set(x,y,z);p.add(c);return c};
+  const outline=m=>m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),edgeM));
+
+  /* ground + stand */
+  const ground=new THREE.Mesh(new THREE.CircleGeometry(3.4,48),mats.grass);ground.rotation.x=-Math.PI/2;root.add(ground);
+  [-1,1].forEach(sx=>[-1,1].forEach(sz=>box(.14,.5,.14,mats.dark,sx*1.2,.25,sz)));
+  [-1,1].forEach(sz=>box(2.6,.08,.08,mats.dark,0,.18,sz));
+  box(2.7,.08,2.3,mats.dark,0,.54,0);
+  /* scale plates (load cell sits between) */
+  box(2.2,.04,1.8,mats.metal,0,.6,0);box(2.2,.04,1.8,mats.metal,0,.78,0);
+  /* bottom board + landing board */
+  box(2.4,.08,2.0,mats.dark,0,.84,0);
+  const land=box(1.3,.035,.34,mats.dark,0,.862,1.16);land.rotation.x=.06;
+
+  /* hive bodies */
+  function walls(g,h,entrance){
+    const t=.07,W=2.4,D=2.0,ms=[];
+    ms.push(box(W,h,t,mats.wall,0,h/2,-(D-t)/2,g));
+    if(entrance){ms.push(box(W,h-.08,t,mats.wall,0,.08+(h-.08)/2,(D-t)/2,g));
+      [-1,1].forEach(s=>box(.74,.08,.06,mats.dark,s*.8,.04,(D-t)/2,g));} // entrance reducer
+    else ms.push(box(W,h,t,mats.wall,0,h/2,(D-t)/2,g));
+    [-1,1].forEach(s=>{ms.push(box(t,h,D-2*t,mats.wall,s*(W-t)/2,h/2,0,g));box(.03,.08,.5,mats.black,s*(W/2+.012),h*.72,0,g)});
+    ms.forEach(outline);
+  }
+  function frame(g,x,h,comb){
+    box(.07,.04,1.98,mats.wood,x,h-.05,0,g);
+    [-1,1].forEach(s=>box(.05,h-.11,.04,mats.wood,x,.04+(h-.11)/2,s*.89,g));
+    box(.04,.03,1.8,mats.wood,x,.055,0,g);
+    box(.035,h-.17,1.74,comb,x,.07+(h-.17)/2,0,g);
+  }
+  const broodG=new THREE.Group();broodG.position.y=.88;root.add(broodG);
+  walls(broodG,1.1,true);for(let i=0;i<10;i++)frame(broodG,-.9+.2*i,1.1,mats.brood);
+  const superG=new THREE.Group();superG.position.y=1.98;root.add(superG);
+  walls(superG,.7,false);for(let i=0;i<10;i++)frame(superG,-.9+.2*i,.7,mats.honey);
+  const coverG=new THREE.Group();coverG.position.y=2.68;root.add(coverG);
+  box(2.4,.03,2.0,mats.wood,0,.015,0,coverG);cyl(.12,.12,.032,mats.black,0,.016,0,coverG);
+  const roofG=new THREE.Group();roofG.position.y=2.71;root.add(roofG);
+  box(2.6,.22,2.2,mats.wood,0,.11,0,roofG);box(2.66,.03,2.26,mats.metal,0,.235,0,roofG);
+  const base={super:1.98,cover:2.68,roof:2.71};
+
+  /* electronics */
+  const parts={};
+  function part(key,name,pos,accent){const g=new THREE.Group();g.position.copy(pos);g.userData.part=key;root.add(g);parts[key]={g,name,mats:[],accent};return g}
+  const pcb=(key,color,o={})=>{const m=M(color,Object.assign({roughness:.45,emissive:parts[key].accent,emissiveIntensity:.08},o));parts[key].mats.push(m);return m};
+  const pinRow=(g,n,x,y,z,step,axis)=>{for(let i=0;i<n;i++){const p=[x,y,z];p[axis]+=i*step;box(.014,.014,.014,mats.pin,...p,g)}};
+
+  // ESP32 in a transparent IP box on the right wall
+  const esp=part('hub','ESP32',V(1.37,1.45,0),0xf5b301);
+  outline(box(.3,.8,1.0,mats.encl,0,0,0,esp));
+  [-1,1].forEach(s=>box(.05,.06,1.1,mats.metal,-.17,s*.32,0,esp)); // brackets
+  const eP=pcb('hub',0x16181c);
+  box(.02,.56,.28,eP,-.06,0,0,esp);
+  box(.026,.17,.18,mats.metal,-.04,.11,0,esp);                // RF shield
+  box(.022,.07,.18,M(0xd4a836,{metalness:.7,roughness:.3}),-.046,.235,0,esp); // PCB antenna
+  box(.04,.05,.08,mats.metal,-.035,-.27,0,esp);               // USB
+  [-1,1].forEach(s=>{box(.05,.5,.026,mats.black,-.025,-.01,s*.125,esp);pinRow(esp,14,.005,-.23,s*.125,.034,1)});
+  [-1,1].forEach(s=>box(.02,.03,.03,mats.metal,-.045,-.19,s*.06,esp));  // EN/BOOT
+  box(.012,.015,.015,M(0xff3b3b,{emissive:0xff2020,emissiveIntensity:2}),-.045,-.12,.06,esp); // LED
+  cyl(.035,.035,.04,mats.metal,0,.42,.32,esp);cyl(.022,.018,.42,mats.black,0,.65,.32,esp);  // antenna
+  [-.1,-.3].forEach(z=>cyl(.035,.035,.05,M(0x333333),0,.42,z,esp));cyl(.035,.035,.05,M(0x333333),0,-.42,0,esp); // glands
+
+  // MAX9814 hanging between frames
+  const mic=part('mic','MAX9814',V(0,1.62,.35),0x6cb8ff);
+  box(.012,.24,.14,pcb('mic',0x5b2a86),0,0,0,mic);
+  const cap=cyl(.045,.045,.05,mats.black,.03,.06,0,mic,24);cap.rotation.z=Math.PI/2;
+  const gr=cyl(.04,.04,.004,mats.metal,.057,.06,0,mic,24);gr.rotation.z=Math.PI/2;
+  box(.01,.04,.04,mats.black,.01,-.05,.03,mic);
+  pinRow(mic,5,.01,-.11,-.055,.028,2);
+  cyl(.004,.004,.33,mats.metal,0,.285,0,mic,6);
+
+  // MPU6050 screwed to a frame
+  const mpu=part('acc','MPU6050',V(-.47,1.3,-.25),0x5fd08a);
+  box(.012,.13,.17,pcb('acc',0x1f4fa8),0,0,0,mpu);
+  box(.012,.05,.05,mats.black,.012,.01,0,mpu);
+  pinRow(mpu,8,.01,-.055,-.07,.02,2);
+  [-1,1].forEach(s=>cyl(.012,.012,.02,mats.metal,.01,.045,s*.065,mpu,10).rotation.z=Math.PI/2);
+
+  // BME280 between frames
+  const bme=part('th','BME280',V(.6,1.55,-.4),0xff6b4a);
+  box(.012,.11,.11,pcb('th',0x5b2a86),0,0,0,bme);
+  box(.016,.028,.028,mats.metal,.012,.02,0,bme);
+  pinRow(bme,4,.01,-.045,-.04,.027,2);
+  cyl(.004,.004,.38,mats.metal,0,.25,0,bme,6);
+
+  // Load cell bar + HX711
+  const load=part('load','Load Cell + HX711',V(0,.69,0),0xc77dff);
+  const lcM=pcb('load',0xc9ccd4,{metalness:.6,roughness:.35});
+  box(1.4,.12,.14,lcM,0,0,0,load);
+  box(.14,.004,.1,M(0xf2f2f2),0,.062,0,load);
+  [-.6,-.45,.45,.6].forEach(x=>cyl(.025,.025,.15,mats.metal,x,0,0,load,10));
+  const hx=new THREE.Group();hx.position.set(1.0,-.09,1.02);load.add(hx);
+  box(.34,.02,.2,pcb('load',0x1f7a3a),0,0,0,hx);box(.08,.02,.06,mats.black,-.03,.02,0,hx);
+  pinRow(hx,6,-.13,.015,-.08,.05,0);pinRow(hx,4,-.12,.015,.08,.03,0);
+
+  /* cables */
+  const cable=(pts,color)=>root.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p=>V(...p))),64,.012,6),M(color,{roughness:.5})));
+  cable([[0,1.95,.35],[.1,2.0,.35],[.6,2.0,.3],[1.1,2.0,.1],[1.3,1.95,-.05],[1.37,1.87,-.1]],0x3a7bd5);
+  cable([[-.47,1.37,-.25],[-.45,1.97,-.25],[.2,2.0,-.2],[1.1,2.0,-.15],[1.3,1.95,-.2],[1.37,1.87,-.3]],0x2e9e58);
+  cable([[.6,1.93,-.4],[.65,2.0,-.4],[1.1,2.0,-.3],[1.3,1.95,-.28],[1.37,1.87,-.3]],0xd8573a);
+  cable([[1.15,.62,1.02],[1.35,.7,.9],[1.42,.9,.4],[1.37,1.03,0]],0x8a5bd6);
+  cable([[.7,.69,0],[.95,.66,.5],[.9,.62,.95]],0x8a5bd6);
+
+  /* bees */
+  const beeBodyM=M(0xffffff,{map:stripe,roughness:.6}),beeHeadM=M(0x1a1206),wingM=new THREE.MeshBasicMaterial({color:0xddeeff,transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false});
+  const sph=new THREE.SphereGeometry(1,12,10),wingG=new THREE.PlaneGeometry(1,1);
+  function makeBee(){
+    const b=new THREE.Group(),body=new THREE.Mesh(sph,beeBodyM);body.scale.set(.022,.042,.022);body.rotation.x=Math.PI/2;b.add(body);
+    const head=new THREE.Mesh(sph,beeHeadM);head.scale.setScalar(.016);head.position.z=.046;b.add(head);
+    const wings=[-1,1].map(s=>{const p=new THREE.Group();p.position.set(s*.008,.02,.012);const w=new THREE.Mesh(wingG,wingM);w.scale.set(.05,.028,1);w.rotation.x=-Math.PI/2;w.position.x=s*.026;p.add(w);b.add(p);return p});
+    b.userData.wings=wings;root.add(b);return b}
+  const fliers=[...Array(22)].map(()=>{const b=makeBee();Object.assign(b.userData,{s:Math.random(),a:Math.random()*6.28,sp:.05+Math.random()*.06,R:1+Math.random()*1.2});return b});
+  const walkers=[...Array(7)].map(()=>{const b=makeBee();Object.assign(b.userData,{h:Math.random()*6.28});b.position.set((Math.random()-.5)*.8,.893,1.05+Math.random()*.2);return b});
+  const flyPos=(s,a,R)=>{const r=Math.sin(Math.PI*s);return V(Math.sin(a+s*5)*r*R,.93+r*(1+.4*Math.sin(a*3))+Math.sin(s*40+a)*.02,1.05+r*(1.4+Math.cos(a+s*5)*.6))};
+
+  /* sound rings from mic */
+  const rings=[0,1,2].map(i=>{const m=new THREE.Mesh(new THREE.RingGeometry(.06,.07,40),new THREE.MeshBasicMaterial({color:0x6cb8ff,transparent:true,side:THREE.DoubleSide,depthWrite:false}));m.position.set(.06,1.68,.35);m.userData.o=i/3;root.add(m);return m});
+
+  root.traverse(o=>{if(o.isMesh&&!o.material.transparent){o.castShadow=true;o.receiveShadow=true}});
+  ground.castShadow=false;
+
+  /* labels */
+  const labels={};
+  Object.entries(parts).forEach(([k,p])=>{const b=document.createElement('button');b.className='lbl';b.textContent=p.name;b.type='button';
+    b.addEventListener('pointerdown',e=>e.stopPropagation());b.onclick=()=>setSel(k);el.appendChild(b);labels[k]=b});
+
+  /* interaction */
+  let rotY=.55,rotX=.32,dist=8.5,distGoal=8.5,auto=true,sel=null,exploded=false,down=null,last=null;
+  const tgt=V(0,1.45,0),tgtGoal=tgt.clone(),ray=new THREE.Raycaster();
+  function home(){tgtGoal.set(0,exploded?2.1:1.45,0);distGoal=exploded?10.5:8.5}
+  function setSel(k){
+    sel=sel===k?null:k;auto=false;
+    document.querySelectorAll('#parts button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.p===sel));
+    Object.entries(labels).forEach(([n,b])=>b.classList.toggle('on',n===sel));
+    if(sel){parts[sel].g.getWorldPosition(tgtGoal);distGoal=sel==='load'?4:2.8}else home();
+  }
+  el.addEventListener('pointerdown',e=>{down=last=[e.clientX,e.clientY];auto=false;el.setPointerCapture(e.pointerId)});
+  el.addEventListener('pointermove',e=>{if(!last)return;rotY-=(e.clientX-last[0])*.008;rotX=Math.max(-.1,Math.min(1.3,rotX+(e.clientY-last[1])*.006));last=[e.clientX,e.clientY]});
+  el.addEventListener('pointerup',e=>{
+    if(down&&Math.hypot(e.clientX-down[0],e.clientY-down[1])<5){
+      const b=el.getBoundingClientRect();ray.setFromCamera({x:(e.clientX-b.left)/b.width*2-1,y:-(e.clientY-b.top)/b.height*2+1},cam);
+      for(const h of ray.intersectObjects(root.children,true)){let o=h.object;while(o&&!o.userData.part)o=o.parent;if(o){setSel(o.userData.part);break}}
+    }down=last=null});
+  el.addEventListener('wheel',e=>{e.preventDefault();distGoal=Math.max(2,Math.min(14,distGoal+e.deltaY*.006))},{passive:false});
+  $('#xray').onchange=e=>{mats.wall.opacity=e.target.checked?.3:1;mats.wall.depthWrite=!e.target.checked;mats.wall.transparent=e.target.checked;mats.wall.needsUpdate=true};
+  $('#explode').onchange=e=>{exploded=e.target.checked;if(!sel)home()};
+  $('#labels').onchange=e=>Object.values(labels).forEach(b=>b.hidden=!e.target.checked);
+  document.querySelectorAll('#parts button').forEach(b=>b.onclick=()=>setSel(b.dataset.p));
+
+  function size(){const w=el.clientWidth,h=el.clientHeight;r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+  size();addEventListener('resize',size);
+  let vis=true;new IntersectionObserver(e=>vis=e[0].isIntersecting).observe(el);
+  const clock=new THREE.Clock(),tmp=V(0,0,0);
+  (function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;if(!vis)return;
+    if(auto&&!reduce)rotY+=dt*.15;
+    tgt.lerp(tgtGoal,.08);dist+=(distGoal-dist)*.08;
+    const ex=exploded?1:0;
+    superG.position.y+=(base.super+ex*.95-superG.position.y)*.08;
+    coverG.position.y+=(base.cover+ex*1.6-coverG.position.y)*.08;
+    roofG.position.y+=(base.roof+ex*2.0-roofG.position.y)*.08;
+    cam.position.set(tgt.x+Math.sin(rotY)*Math.cos(rotX)*dist,tgt.y+Math.sin(rotX)*dist,tgt.z+Math.cos(rotY)*Math.cos(rotX)*dist);cam.lookAt(tgt);
+    Object.entries(parts).forEach(([k,p])=>{const v=k===sel?.7+Math.sin(t*5)*.4:(sel?.02:.08);p.mats.forEach(m=>m.emissiveIntensity=v)});
+    if(!reduce){
+      fliers.forEach(b=>{const u=b.userData;u.s=(u.s+dt*u.sp)%1;b.position.copy(flyPos(u.s,u.a,u.R));b.lookAt(flyPos(Math.min(u.s+.01,.999),u.a,u.R));
+        u.wings.forEach((w,i)=>w.rotation.z=(i?-1:1)*Math.sin(t*90+u.a)*.7)});
+      walkers.forEach(b=>{const u=b.userData;u.h+=(Math.random()-.5)*.3;b.position.x=Math.max(-.55,Math.min(.55,b.position.x+Math.sin(u.h)*dt*.08));
+        b.position.z=Math.max(1.0,Math.min(1.3,b.position.z+Math.cos(u.h)*dt*.08));b.rotation.y=u.h;u.wings.forEach((w,i)=>w.rotation.z=(i?-1:1)*.25)});
+      rings.forEach(m=>{const p=(t*.6+m.userData.o)%1;m.scale.setScalar(1+p*3);m.material.opacity=(1-p)*.55;m.lookAt(cam.position)});
+    }
+    r.render(scene,cam);
+    const w=el.clientWidth,h=el.clientHeight;
+    Object.entries(parts).forEach(([k,p])=>{p.g.getWorldPosition(tmp);tmp.y+=k==='load'?.1:.18;tmp.project(cam);
+      labels[k].style.transform=`translate(${(tmp.x+1)/2*w}px,${(1-tmp.y)/2*h}px) translate(-50%,-100%)`;labels[k].style.visibility=tmp.z>1?'hidden':''});
+  })();
+})();
+
+
+/* ---- Motion ---- */
+if(M2){
+  const {animate,scroll,inView,stagger}=Motion;
+  document.documentElement.classList.add('motion');
+  const spring={type:'spring',stiffness:420,damping:24};
+  // scroll progress + hero parallax
+  scroll(animate('#progress',{scaleX:[0,1]},{ease:'linear'}));
+  scroll(animate('.hero-card',{y:[0,-70],rotate:[0,-1.5]},{ease:'linear'}),{target:document.querySelector('.hero'),offset:['start start','end start']});
+  // hero entrance
+  const heroBits=['.hero .eyebrow','.hero h1','.hero .lead','.hero-cta .btn'];
+  animate(heroBits.join(','),{opacity:[0,1],y:[24,0]},{delay:stagger(.09),duration:.7,ease:[.22,1,.36,1]});
+  animate('.hero-card',{opacity:[0,1],scale:[.92,1]},{...spring,delay:.25});
+  animate('.mini-stats div',{opacity:[0,1],y:[12,0]},{delay:stagger(.08,{startDelay:.6})});
+  // scroll reveals, staggered among siblings
+  document.querySelectorAll('.reveal').forEach(el=>{
+    const sib=[...el.parentElement.children].filter(c=>c.classList.contains('reveal')),i=sib.indexOf(el);
+    inView(el,()=>{animate(el,{opacity:[0,1],y:[28,0]},{duration:.7,delay:i*.09,ease:[.22,1,.36,1]})},{amount:.15});
+  });
+  // timeline dots pop in
+  document.querySelectorAll('.tl ol').forEach(ol=>inView(ol,()=>{animate(ol.querySelectorAll('li'),{opacity:[0,1],x:[-14,0]},{delay:stagger(.12,{startDelay:.3})})},{amount:.4}));
+  // spring hover / press
+  const press=(sel,hov=1.03,tap=.96)=>document.addEventListener('pointerover',e=>{
+    const t=e.target.closest(sel);if(!t||t._m)return;t._m=1;
+    const to=s=>animate(t,{scale:s},spring);
+    to(hov);
+    const leave=()=>{to(1);t._m=0;t.removeEventListener('pointerleave',leave);t.removeEventListener('pointerdown',down)};
+    const down=()=>{to(tap);addEventListener('pointerup',()=>to(t.matches(':hover')?hov:1),{once:true})};
+    t.addEventListener('pointerleave',leave);t.addEventListener('pointerdown',down);
+  });
+  press('.btn');press('.hive-btn',1.02,.97);press('.scen button',1.02,.97);press('.parts button',1.02,.97);press('.sensor',1.02,.98);press('.lbl',1.08,.94);
+  // demo: animate status + metrics whenever they change
+  const st=document.querySelector('.status-text');
+  new MutationObserver(()=>{
+    animate('.status-text',{opacity:[0,1],y:[10,0]},{duration:.4});
+    animate('.metric',{opacity:[0,1],y:[12,0]},{delay:stagger(.05),duration:.4});
+    animate('.gauge',{scale:[.9,1]},spring);
+  }).observe(document.getElementById('stTitle'),{childList:true});
+  // sensor card expand: spring the icon
+  document.querySelectorAll('.sensor').forEach(b=>b.addEventListener('click',()=>animate(b.querySelector('.ic'),{rotate:[0,-12,8,0],scale:[1,1.15,1]},{duration:.5})));
+}
+
+/* ---- Motion design layer ---- */
+if(M2){
+  const {animate,scroll,inView,stagger}=Motion;
+  const ease=[.22,1,.36,1];
+  const hero=document.querySelector('.hero');
+  // split text into words
+  const split=el=>{[...el.childNodes].forEach(n=>{
+    if(n.nodeType===3){const f=document.createDocumentFragment();n.textContent.split(/(\s+)/).forEach(p=>{if(!p)return;if(/^\s+$/.test(p))f.append(p);else{const s=document.createElement('span');s.className='w';s.textContent=p;f.append(s)}});n.replaceWith(f)}
+    else{const s=document.createElement('span');s.className='w';n.replaceWith(s);s.append(n)}});return el.querySelectorAll('.w')};
+  animate(split(hero.querySelector('h1')),{opacity:[0,1],y:[46,0],rotateX:[-60,0],filter:['blur(8px)','blur(0px)']},{delay:stagger(.07,{startDelay:.15}),duration:.9,ease});
+  document.querySelectorAll('.sec-head h2').forEach(h=>{const ws=split(h);ws.forEach(w=>w.style.opacity=0);
+    inView(h,()=>{animate(ws,{opacity:[0,1],y:[24,0],filter:['blur(6px)','blur(0px)']},{delay:stagger(.045,{startDelay:.1}),duration:.7,ease})},{amount:.5})});
+  // kicker lines
+  document.querySelectorAll('.kicker').forEach(k=>{const l=document.createElement('span');l.className='kline';l.style.transform='scaleX(0)';k.prepend(l);
+    inView(k,()=>{animate(l,{scaleX:[0,1]},{duration:.6,ease,delay:.1})})});
+  // hero fx: floating honeycomb + flying bee
+  const fx=document.createElement('div');fx.className='hero-fx';fx.setAttribute('aria-hidden','true');hero.prepend(fx);
+  const hexSvg=(s,o)=>`<svg width="${s}" height="${s*1.15}" viewBox="0 0 100 115"><path d="M50 3l44 25v51l-44 25L6 79V28z" fill="none" stroke="#f5b301" stroke-opacity="${o}" stroke-width="2.5"/></svg>`;
+  [[6,12,70,.35,40],[44,4,36,.25,90],[88,10,90,.2,60],[70,72,54,.3,120],[12,78,44,.22,80],[54,40,120,.08,30],[95,60,30,.35,140]].forEach(([x,y,s,o,par],i)=>{
+    const outer=document.createElement('div');outer.className='hx';outer.style.left=x+'%';outer.style.top=y+'%';
+    const inner=document.createElement('div');inner.innerHTML=hexSvg(s,o);outer.append(inner);fx.append(outer);
+    animate(inner,{opacity:[0,1],scale:[.4,1]},{duration:1.2,delay:.4+i*.1,ease});
+    animate(inner.firstChild,{y:[0,-14,0],rotate:[0,i%2?12:-12,0]},{duration:6+i,repeat:Infinity,ease:'easeInOut'});
+    scroll(animate(outer,{y:[0,-par]},{ease:'linear'}),{target:hero,offset:['start start','end start']});
+  });
+  const bee=document.createElement('div');bee.className='bee';
+  bee.innerHTML='<svg viewBox="0 0 34 28" width="34" height="28"><ellipse class="wing" cx="13" cy="7" rx="6" ry="7" fill="#dff1ff" fill-opacity=".7"/><ellipse class="wing" cx="20" cy="7" rx="6" ry="7" fill="#dff1ff" fill-opacity=".55"/><ellipse cx="16" cy="17" rx="11" ry="7.5" fill="#f5b301"/><rect x="11" y="10" width="3.2" height="14" fill="#1a1206"/><rect x="17" y="10" width="3.2" height="14" fill="#1a1206"/><circle cx="28" cy="16" r="4.5" fill="#1a1206"/><path d="M3 17l-3 1.5" stroke="#1a1206" stroke-width="2"/></svg>';
+  fx.append(bee);
+  let heroOn=true;new IntersectionObserver(e=>heroOn=e[0].isIntersecting).observe(hero);
+  const P=(v,w,h)=>[w*(.5+.44*Math.sin(v*6.283)),h*(.48+.36*Math.sin(v*12.566+1))];
+  animate(0,1,{duration:16,repeat:Infinity,ease:'linear',onUpdate:v=>{if(!heroOn)return;
+    const w=fx.clientWidth,h=fx.clientHeight,[x,y]=P(v,w,h),[x2,y2]=P(v+.002,w,h),a=Math.atan2(y2-y,x2-x)*57.3,flip=Math.abs(a)>90;
+    bee.style.transform=`translate(${x}px,${y+Math.sin(v*300)*3}px) rotate(${flip?a+180:a}deg) scaleX(${flip?-1:1})`}});
+  // hero counters
+  document.querySelectorAll('.mini-stats b').forEach(b=>{const m=b.textContent.match(/([\d.]+)(.*)/);if(!m)return;const to=+m[1],dec=(m[1].split('.')[1]||'').length;
+    animate(0,to,{duration:1.6,delay:.7,ease,onUpdate:v=>b.textContent=v.toFixed(dec)+m[2]})});
+  // magnetic primary buttons
+  document.querySelectorAll('.btn-primary').forEach(b=>{
+    b.addEventListener('pointermove',e=>{const r=b.getBoundingClientRect();animate(b,{x:(e.clientX-r.left-r.width/2)*.25,y:(e.clientY-r.top-r.height/2)*.35},{type:'spring',stiffness:300,damping:18})});
+    b.addEventListener('pointerleave',()=>animate(b,{x:0,y:0},{type:'spring',stiffness:300,damping:14}))});
+  // draw SVG icons
+  document.querySelectorAll('.ic svg, .honest li svg').forEach(svg=>{const ps=svg.querySelectorAll('path');
+    ps.forEach(p=>{p.setAttribute('pathLength','1');p.style.strokeDasharray='1';p.style.strokeDashoffset='1'});
+    inView(svg.closest('.sensor,.col')||svg,()=>{ps.forEach((p,i)=>p.animate([{strokeDashoffset:1},{strokeDashoffset:0}],{duration:900,delay:300+i*150,easing:'ease-in-out',fill:'forwards'}).onfinish=()=>p.style.strokeDashoffset='0')},{amount:.3})});
+  // scroll-linked timeline + steps line
+  document.querySelectorAll('.tl ol').forEach(ol=>{const f=document.createElement('span');f.className='tl-fill';ol.prepend(f);
+    scroll(animate(f,{scaleY:[0,1]},{ease:'linear'}),{target:ol,offset:['start 85%','end 55%']})});
+  const steps=document.querySelector('.steps');if(steps){const l=document.createElement('span');l.className='steps-line';steps.prepend(l);
+    scroll(animate(l,{scaleX:[0,1]},{ease:'linear'}),{target:steps,offset:['start 90%','end 60%']})}
+  // demo gauge pulse on high deviation
+  setInterval(()=>{const v=+document.getElementById('gVal').textContent;if(v>=70)animate('.gauge',{scale:[1,1.06,1]},{duration:.6})},1800);
+}
+</script>
+</body>
+</html>
